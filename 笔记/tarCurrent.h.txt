@@ -1,0 +1,58 @@
+当前请求的上下文
+1. _request是在哪生成的？？
+		ServantHandle;
+		TarsCurrent : public TC_HandleBase
+			public:
+				TARS_STATUS;
+				TARS_BUFFER;
+				TarsCurrent(ServantHandle *pServantHandle);
+				~TarsCurrent();
+				getIp() const;
+				getPort() const;
+				getUId() const;
+				getFd() const { return _fd; }
+				isResponse() const;
+				setCloseType(int type);
+				getCloseType() const;
+				setResponse(bool value) { _response = value; }
+				setResponseContext(const map<std::string, std::string> & context){_responseContext = context;}
+				getResponseContext() const {return _responseContext;}
+				close();
+				getServantHandle();
+				getBindAdapter();
+				getRequestBuffer() const;
+				getServantName() const;
+				getRequestVersion() const;
+				getContext();
+				getRequestStatus() const;
+				getFuncName() const;
+				getRequestId() const;
+				getPacketType() const;
+				getMessageType() const;
+				getRecvTime() const;
+				setReportStat(bool bReport);
+				sendResponse(int iRet, const vector<char>& buffer = TARS_BUFFER(), const map<string, string>& status = TARS_STATUS(), const string & sResultDesc = "");
+				sendResponse(const char* buff, uint32_t len);
+			protected:
+				ServantHandle;
+				Application;
+				initialize(const TC_EpollServer::tagRecvData &stRecvData);
+				initialize(const TC_EpollServer::tagRecvData &stRecvData, int64_t beginTime);
+				initializeClose(const TC_EpollServer::tagRecvData &stRecvData);
+				initialize(const string &sRecvBuffer);
+				reportToStat(const string & sObj);
+			protected:
+				_servantHandle;
+				_bindAdapter;
+				_uid;
+				_ip;
+				_port;
+				_fd;
+				_request;
+				_response;
+				_begintime;
+				_ret;
+				_reportStat;
+				_closeType;
+				_responseContext;
+	#endif

@@ -1,0 +1,32 @@
+该类是将互斥锁和条件变量结合起来进行统一管理
+为什么在unlock和wait系列中，都要通知其他线程醒来？
+这个应该是针对循环锁做的设置吧，因为非循环锁只能加锁一次，nnotify=0，notifyImpl也不会进行通知
+		TC_Monitor
+			public:
+				//Lock和TryLock下面定义了两种锁，在使用的时候一般不用调用成员函数lock()，而是直接用
+				//Lock(*this)，会在构造的时候自动调用成员函数lock()，析构时自动调用成员函数unlock()
+				Lock;//typedef TC_LockT<TC_Monitor<T, P> > Lock;
+				TryLock;//typedef TC_TryLockT<TC_Monitor<T, P> > TryLock;
+				TC_Monitor() : _nnotify(0)
+				~TC_Monitor()
+				lock() const//给互斥量加锁
+				//解锁，同时调用notifyImpl通知等待该条件变量的线程醒来
+				//因为signa或者broadcast必须要先解锁互斥量才能让被通知的线程有机会锁定互斥量
+				unlock() const	tryLock() const
+				wait() const//当前调用线程等待条件变量_cond
+				timedWait(int millsecond) const//同上，只不过调用的是timeWait
+				notify() //通知一个线程醒来，其实就是对_nnotify加一，并没有真的通知【在解锁的时候才真正通知】
+				notifyAll()//通知所有线程醒来，其实就是设置_nnotify=-1，并没有真的通知【在解锁的时候才真正通知】
+			protected:
+				//通知若干个线程醒来，若nnotify=-1，则braodcast，若nnotify>1则循环执行nnotify次signal
+				notifyImpl(int nnotify) const 
+			private:
+				TC_Monitor(const TC_Monitor&);
+				operator=(const TC_Monitor&);
+			protected:
+				_nnotify;
+				_cond;
+				_mutex;
+		TC_ThreadLock;
+		TC_ThreadRecLock;
+	#endif

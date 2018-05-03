@@ -1,0 +1,7 @@
+* TUP协议
+* 杂七杂八
+	在生成服务时（服务名以Hello为例），tars2cpp会生成Hello.h文件，文件中包含两个类HelloProxy:ServantProxy以及
+	Hello:Servant。第一个类是给客户端用的，第二个是服务端的实现。即客户端通过HelloProxy来远程调用Hello。
+	一般来说，要实现一个服务的话，HelloProxy的代码都是自动生成的，无需用户关注（因为它实现的是框架的远程调用功能），
+	用户只需要实现自己的业务逻辑接口即可（在Hello中定义为虚函数，需要给出具体实现）。
+	此外Hello.h还有一些callback、promise之类的代码，以支持异步调用。

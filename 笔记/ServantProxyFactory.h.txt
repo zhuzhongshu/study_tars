@@ -1,0 +1,12 @@
+ServantProxy的工厂类
+该类一般都是放在Communicator里作为一个成员变量，它也关联了对应的通信器，目的是拿到通信器内定义的网络线程数，
+然后创建ServantProxy时指定同样数目的ObjectProxy
+		ServantProxyFactory : public TC_HandleBase, public TC_ThreadRecMutex
+			public:
+				ServantProxyFactory(Communicator* comm);
+				~ServantProxyFactory();
+				getServantProxy(const string& name,const string& setName="");
+			private:
+				_comm;//对应的通信器
+				_servantProxy;//已创建的对象
+	#endif

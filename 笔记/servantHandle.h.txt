@@ -1,0 +1,34 @@
+Servant的业务处理线程类，会起一个线程然后循环执行handle()。函数内部会
+		ServantHandle : public TC_EpollServer::Handle
+			public:
+				enum
+				ServantHandle();
+				~ServantHandle();
+				run();
+				getCoroSched() { return _coroSched; }
+			protected:
+				handleRequest();
+				handleRecvData(TC_EpollServer::tagRecvData *stRecvData);
+			protected:
+				initialize();
+				handle(const TC_EpollServer::tagRecvData &stRecvData);
+				handleTimeout(const TC_EpollServer::tagRecvData &stRecvData);
+				handleOverload(const TC_EpollServer::tagRecvData &stRecvData);
+				handleClose(const TC_EpollServer::tagRecvData &stRecvData);
+				handleAsyncResponse();
+				handleCustomMessage(bool bExpectIdle = false);
+				heartbeat();
+				allFilterIsEmpty();
+				createCurrent(const TC_EpollServer::tagRecvData &stRecvData);
+				createCloseCurrent(const TC_EpollServer::tagRecvData &stRecvData);
+				handleTarsProtocol(const TarsCurrentPtr &current);
+				handleNoTarsProtocol(const TarsCurrentPtr &current);
+				processSample(const TarsCurrentPtr &current);
+				processDye(const TarsCurrentPtr &current, string& dyeingKey);
+				checkValidSetInvoke(const TarsCurrentPtr &current);
+			protected:
+				_servants;
+				_monitor;
+				_coroSched;
+		ServantHandlePtr;
+	#endif

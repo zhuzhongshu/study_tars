@@ -1,0 +1,49 @@
+超时队列，记录了队列中元素的超时时间。
+队列维护_data,_time,_send三个数据结构，要发送的数据实际存放在_data中，
+_time,_send只放了指向_data中某个数据的迭代器。同时_data也存放了数据在_time和_send中的迭代器，
+三个数据结构的定义如下：
+_data:    typedef hash_map<uint32_t, PtrInfo>     data_type;//第一个数据是id
+_time:    typedef multimap<int64_t,NodeInfo>      time_type;//第一个数据是超时时间
+_send:    typedef list<SendInfo>                  send_type;//是否发送
+		TC_TimeoutQueueNew
+			public:
+				PtrInfo;
+				NodeInfo;
+				SendInfo;
+				data_type;
+				time_type;
+				send_type;
+				data_functor;
+				PtrInfo
+					ptr;
+					hasSend;
+				NodeInfo
+				SendInfo
+				TC_TimeoutQueueNew(int timeout = 5*1000,size_t size = 100 ) : _uniqId(0)
+				generateId();
+				sendListEmpty()
+				getSend(T & t);
+				popSend(bool del = false);
+				getSendListSize()
+				get(uint32_t uniqId, T & t,bool bErase = true);
+				erase(uint32_t uniqId, T & t);
+				push(T& ptr, uint32_t uniqId,int64_t timeout,bool hasSend = true);
+				timeout();
+				timeout(T & t);
+				timeout(data_functor &df);
+				size() const { return _data.size(); }
+			protected:
+				_uniqId;
+				_data;
+				_time;
+				_send;
+		TC_TimeoutQueueNew<T>::getSend(T & t)
+		TC_TimeoutQueueNew<T>::popSend(bool del)
+		TC_TimeoutQueueNew<T>::get(uint32_t uniqId, T & t, bool bErase)
+		TC_TimeoutQueueNew<T>::generateId()
+		TC_TimeoutQueueNew<T>::push(T& ptr, uint32_t uniqId,int64_t timeout,bool hasSend)
+		TC_TimeoutQueueNew<T>::timeout()
+		TC_TimeoutQueueNew<T>::timeout(T & t)
+		TC_TimeoutQueueNew<T>::timeout(data_functor &df)
+		TC_TimeoutQueueNew<T>::erase(uint32_t uniqId, T & t)
+	#endif

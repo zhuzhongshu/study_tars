@@ -1,0 +1,94 @@
+端口管理。
+客户端常见的代码
+comm.stringToProxy("TestApp.HelloServer.HelloObj@tcp -h 10.120.129.226 -p 20001" , prx);
+中的"TestApp.HelloServer.HelloObj@tcp -h 10.120.129.226 -p 20001"就是在这里利用setObjName解析的。
+具体地说，comm首先会生成ObjectProxy,然后每个ObjectProxy都会定义一个EndpointManager，管理string中指定的服务IP+端口
+		GetEndpointType
+		EndpointWeightType
+		QueryEpBase : public QueryFPrxCallback
+		EndpointManager : public QueryEpBase
+			public:
+				iMinWeightLimit = 10;
+				iMaxWeightLimit = 100;
+			public:
+				EndpointManager(ObjectProxy* pObjectProxy, Communicator* pComm, const string & sObjName, bool bFirstNetThread, const string& setName = "");
+				~EndpointManager();
+				notifyEndpoints(const set<EndpointInfo> & active, const set<EndpointInfo> & inactive, bool bSync = false);
+				doNotify();
+				selectAdapterProxy(ReqMessage * msg, AdapterProxy * & pAdapterProxy);
+				getAdapters()
+			private:
+				getNextValidProxy();
+				getHashProxy(int64_t hashCode, bool bConsistentHash = false);
+				getHashProxyForNormal(int64_t hashCode);
+				getConHashProxyForNormal(int64_t hashCode);
+				getHashProxyForWeight(int64_t hashCode, bool bStatic, vector<size_t> &vRouterCache);
+				getConHashProxyForWeight(int64_t hashCode, bool bStatic);
+				checkHashStaticWeightChange(bool bStatic);
+				checkConHashChange(bool bStatic, const vector<AdapterProxy*> &vLastConHashProxys);
+				updateHashProxyWeighted(bool bStatic);
+				updateConHashProxyWeighted(bool bStatic, vector<AdapterProxy*> &vLastConHashProxys, TC_ConsistentHashNew &conHash);
+				getWeightedProxy(bool bStaticWeighted);
+				getWeightedForNormal(bool bStaticWeighted);
+				updateProxyWeighted();
+				updateStaticWeighted();
+				dispatchEndpointCache(const vector<int> &vWeight);
+			private:
+				_objectProxy;
+				_activeProxys;
+				_regProxys;
+				_vRegProxys;
+				_allProxys;
+				_vAllProxys;
+				_lastRoundPosition;
+				_update;
+				_first;
+				_lastBuildWeightTime;
+				_updateWeightInterval;
+				_lastSWeightPosition;
+				_staticRouterCache;
+				_activeWeightProxy;
+				_hashStaticRouterCache;
+				_lastHashStaticProxys;
+				_lastConHashWeightProxys;
+				_consistentHashWeight;
+				_lastConHashProxys;
+				_consistentHash;
+		EndpointThread : public QueryEpBase
+			public:
+				EndpointThread(Communicator* pComm, const string & sObjName, GetEndpointType type, const string & sSetName, bool bFirstNetThread = false);
+				~EndpointThread(){}
+				getEndpoints(vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				getTCEndpoints(vector<TC_Endpoint> &activeEndPoint, vector<TC_Endpoint> &inactiveEndPoint);
+				notifyEndpoints(const set<EndpointInfo> & active, const set<EndpointInfo> & inactive, bool bSync);
+				doNotify()
+			private:
+				update(const set<EndpointInfo> & active, const set<EndpointInfo> & inactive);
+			private:
+				_type;
+				_name;
+				_lock;
+				_activeEndPoint;
+				_activeTCEndPoint;
+				_inactiveEndPoint;
+				_inactiveTCEndPoint;
+		EndpointManagerThread
+			public:
+				EndpointManagerThread(Communicator *pComm, const string &sObjName);
+				~EndpointManagerThread();
+				getEndpoint(vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				getEndpointByAll(vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				getEndpointBySet(const string sName, vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				getEndpointByStation(const string sName, vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				getTCEndpoint( vector<TC_Endpoint> &activeEndPoint, vector<TC_Endpoint> &inactiveEndPoint);
+				getTCEndpointByAll(vector<TC_Endpoint> &activeEndPoint, vector<TC_Endpoint> &inactiveEndPoint);
+				getTCEndpointBySet(const string sName, vector<TC_Endpoint> &activeEndPoint, vector<TC_Endpoint> &inactiveEndPoint);
+				getTCEndpointByStation(const string sName, vector<TC_Endpoint> &activeEndPoint, vector<TC_Endpoint> &inactiveEndPoint);
+			protected:
+				getEndpointThread(GetEndpointType type, const string & sName);
+			private:
+				_communicator;
+				_objName;
+				_lock;
+				_info;
+	#endif

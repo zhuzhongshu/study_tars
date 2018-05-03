@@ -1,0 +1,58 @@
+
+		EndpointManager;
+		SocketOpt
+			level;
+			optname;
+			optval;
+			optlen;
+		ObjectProxy : public TC_HandleBase, public TC_ThreadMutex
+			public:
+				ObjectProxy(CommunicatorEpoll * pCommunicatorEpoll, const string & sObjectProxyName, const string& setName="");
+				~ObjectProxy();
+				initialize();
+				loadLocator();
+				invoke(ReqMessage* msg);
+				doInvoke();
+				setProxyProtocol(const ProxyProtocol& protocol);
+				getProxyProtocol();
+				setSocketOpt(int level, int optname, const void *optval, socklen_t optlen);
+				getSocketOpt();
+				setPushCallbacks(const ServantProxyCallbackPtr& cb);
+				getPushCallback();
+				getAdapters() const;
+				doTimeout();
+				timeoutQSize()
+				getCommunicatorEpoll()
+				name() const
+				IsInvokeBySet() const
+				getInvokeSetName() const
+				generateId()
+				getConTimeout()
+				setConTimeout(int conTimeout)
+				checkTimeoutInfo()
+				getServantProxy()
+				setServantProxy(ServantProxy * pServantProxy)
+				setAccessKey(const string& k) { _accessKey = k; }
+				setSecretKey(const string& k) { _secretKey = k; }
+				getAccessKey() const { return _accessKey; }
+				getSecretKey() const { return _secretKey; }
+			protected:
+				doInvokeException(ReqMessage * msg);
+			private:
+				_communicatorEpoll;
+				_name;
+				_invokeSetId;
+				_isInvokeBySet;
+				_id;
+				_hasSetProtocol;
+				_proxyProtocol;
+				_conTimeout;
+				_checkTimeoutInfo;
+				_socketOpts;
+				_pushCallback;
+				_endpointManger;
+				_reqTimeoutQueue;
+				_servantProxy;
+				_accessKey;
+				_secretKey;
+	#endif

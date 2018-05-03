@@ -1,0 +1,91 @@
+实现了端口管理以及客户端socket收发数据功能的封装。
+其中TC_Endpoint类负责管理服务的端口，TC_ClientSocket负责管理客户端socket收发数据
+		TC_EndpointParse_Exception : public TC_Exception
+			TC_EndpointParse_Exception(const string &buffer) : TC_Exception(buffer){}
+			~TC_EndpointParse_Exception() throw() {}
+		TC_Endpoint
+			public:
+				EType { UDP = 0, TCP = 1, SSL = 2 };
+				TC_Endpoint();
+				TC_Endpoint(const string& host, int port, int timeout, int type = 1, int grid = 0, int qos = 0, int weight = -1, unsigned int weighttype = 0, int authType = 0)
+				TC_Endpoint(const string& desc)
+				TC_Endpoint(const TC_Endpoint& l)
+				operator = (const TC_Endpoint& l)
+				operator == (const TC_Endpoint& l)
+				setHost(const string& host) { _host = host; }
+				getHost() const { return _host; }
+				setPort(int port) { _port = port; }
+				getPort() const { return _port; }
+				setTimeout(int timeout) { _timeout = timeout; }
+				getTimeout() const { return _timeout; }
+				isTcp() const { return _type == TCP || _type == SSL; }
+				isSSL() const { return _type == SSL; }
+				setTcp(bool bTcp) { _type = bTcp; }
+				setType(int type) { _type = type; }
+				getType() const { return _type; }
+				getGrid() const { return _grid; }
+				setGrid(int grid) { _grid = grid; }
+				getQos() const { return _qos; }
+				setQos(int qos) { _qos = qos; }
+				getWeight() const { return _weight; }
+				setWeight(int weight) { _weight = weight; }
+				getWeightType() const { return _weighttype; }
+				setWeightType(unsigned int weighttype) { _weighttype = weighttype; }
+				isUnixLocal() const { return _port == 0; }
+				getAuthType() const { return _authType; }
+				setAuthType(int type) { _authType = type; }
+				toString()
+				parse(const string &desc);
+			private:
+				init(const string& host, int port, int timeout, int istcp, int grid, int qos, int weight, unsigned int weighttype, int authType);
+			protected:
+				_host;
+				_port;
+				_timeout;
+				_type;
+				_grid;
+				_qos;
+				_weight;
+				_weighttype;
+				_authType;
+		TC_ClientSocket
+			public:
+				TC_ClientSocket() : _port(0),_timeout(3000) {}
+				~TC_ClientSocket(){}
+				TC_ClientSocket(const string &sIp, int iPort, int iTimeout) { init(sIp, iPort, iTimeout); }
+				init(const string &sIp, int iPort, int iTimeout)
+				send(const char *sSendBuffer, size_t iSendLen) = 0;
+				recv(char *sRecvBuffer, size_t &iRecvLen) = 0;
+				enum
+			protected:
+				_socket;
+				_ip;
+				_port;
+				_timeout;
+		TC_TCPClient : public TC_ClientSocket
+			public:
+				TC_TCPClient(){}
+				TC_TCPClient(const string &sIp, int iPort, int iTimeout) : TC_ClientSocket(sIp, iPort, iTimeout)
+				send(const char *sSendBuffer, size_t iSendLen);
+				recv(char *sRecvBuffer, size_t &iRecvLen);
+				recvBySep(string &sRecvBuffer, const string &sSep);
+				recvAll(string &sRecvBuffer);
+				recvLength(char *sRecvBuffer, size_t iRecvLen);
+				sendRecv(const char* sSendBuffer, size_t iSendLen, char *sRecvBuffer, size_t &iRecvLen);
+				sendRecvBySep(const char* sSendBuffer, size_t iSendLen, string &sRecvBuffer, const string &sSep);
+				sendRecvLine(const char* sSendBuffer, size_t iSendLen, string &sRecvBuffer);
+				sendRecvAll(const char* sSendBuffer, size_t iSendLen, string &sRecvBuffer);
+			protected:
+				checkSocket();
+		TC_UDPClient : public TC_ClientSocket
+			public:
+				TC_UDPClient(){}
+				TC_UDPClient(const string &sIp, int iPort, int iTimeout) : TC_ClientSocket(sIp, iPort, iTimeout)
+				send(const char *sSendBuffer, size_t iSendLen);
+				recv(char *sRecvBuffer, size_t &iRecvLen);
+				recv(char *sRecvBuffer, size_t &iRecvLen, string &sRemoteIp, uint16_t &iRemotePort);
+				sendRecv(const char *sSendBuffer, size_t iSendLen, char *sRecvBuffer, size_t &iRecvLen);
+				sendRecv(const char *sSendBuffer, size_t iSendLen, char *sRecvBuffer, size_t &iRecvLen, string &sRemoteIp, uint16_t &iRemotePort);
+			protected:
+				checkSocket();
+	#endif

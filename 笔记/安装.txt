@@ -1,0 +1,21 @@
+0. 介绍
+Tars框架运行需要的环境有mysql服务器，Tars服务部署服务器、web管理端，三者可以分开部署。另外Tars服务本身也可以分布式部署到多台机器上
+其中mysql服务器可以单独配置一套，Tars服务器可以部署多套，各个服务
+
+
+1. 依赖软件（需要下载的）
+resin 下载开源版
+mysql
+boost库 这个是mysql编译安装需要的
+
+2. 其他依赖（可通过包管理器安装的）
+cmake
+bison flex
+java
+maven
+ncurses
+zlib
+glibc
+gcc
+
+3. 源码编译mysql

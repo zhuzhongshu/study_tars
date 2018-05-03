@@ -1,0 +1,50 @@
+定义了几种锁的类型，用于管理互斥锁
+其特点是构造时会加锁，析构时会解锁。所以在函数中使用的时候比较方便，参见tc_thread_queue.h中的使用
+		TC_Lock_Exception : public TC_Exception
+			TC_Lock_Exception(const string &buffer) : TC_Exception(buffer){}
+			TC_Lock_Exception(const string &buffer, int err) : TC_Exception(buffer, err){}
+			~TC_Lock_Exception() throw() {}
+		TC_LockT
+			public:
+				//初始化时会加锁
+				TC_LockT(const T& mutex) : _mutex(mutex)
+				~TC_LockT()
+				acquire() const
+				tryAcquire() const
+				release() const
+				acquired() const
+			protected:
+				TC_LockT(const T& mutex, bool) : _mutex(mutex)
+			private:
+				TC_LockT(const TC_LockT&);
+				operator=(const TC_LockT&);
+			protected:
+				_mutex;
+				_acquired;
+		TC_TryLockT : public TC_LockT<T>
+			public:
+				TC_TryLockT(const T& mutex) : TC_LockT<T>(mutex, true)
+		TC_EmptyMutex
+			public:
+				lock() const {return 0;}
+				unlock() const {return 0;}
+				trylock() const {return true;}
+		TC_RW_RLockT
+			public:
+				TC_RW_RLockT(T& lock) : _rwLock(lock),_acquired(false)
+				~TC_RW_RLockT()
+			private:
+				_rwLock;
+				_acquired;
+				TC_RW_RLockT(const TC_RW_RLockT&);
+				operator=(const TC_RW_RLockT&);
+		TC_RW_WLockT
+			public:
+				TC_RW_WLockT(T& lock) : _rwLock(lock),_acquired(false)
+				~TC_RW_WLockT()
+			private:
+				_rwLock;
+				_acquired;
+				TC_RW_WLockT(const TC_RW_WLockT&);
+				operator=(const TC_RW_WLockT&);
+	#endif

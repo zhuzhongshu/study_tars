@@ -1,0 +1,38 @@
+线程队列，基于TC_ThreadLock（普通线程锁，非循环）实现，即一个带锁和条件变量的队列，读取/写入线程
+一般是用于生产者/消费者模式，多个生产者线程和多个消费者线程分别往同一个线程队列里输入/输出数据。
+类自动管理了读写数据时加锁和解锁的过程，以及写入数据后通知等待线程的功能。具体逻辑如下：
+1. 初始化一个线程队列，存储某种类型的数据
+2. 生产者线程不断执行往线程队列里写数据的操作（push），写成功之后唤醒消费者线程
+3. 消费者线程不断执行从线程队列里拿数据的操作（pop），若没有数据就等待在线程队列的条件变量上，直到被唤醒
+参考examp_tc_thread_queue.cpp
+	tars
+		TC_ThreadQueue : protected TC_ThreadLock
+			public:
+				TC_ThreadQueue():_size(0){}
+			public:
+				queue_type;
+				pop_front(T& t, size_t millsecond = 0);
+				notifyT();
+				//下面几个push_xx函数在放数据到队列后都会增加nnotify的个数
+				push_back(const T& t);//放一个数据到队尾
+				push_back(const queue_type &qt);//放一个队列的数据到队尾。。。
+				push_front(const T& t);
+				push_front(const queue_type &qt);
+				swap(queue_type &q, size_t millsecond = 0);
+				size() const;
+				clear();
+				empty() const;
+			protected:
+				_queue;
+				_size;
+		TC_ThreadQueue<T, D>::pop_front(T& t, size_t millsecond)
+		TC_ThreadQueue<T, D>::notifyT()
+		TC_ThreadQueue<T, D>::push_back(const T& t)
+		TC_ThreadQueue<T, D>::push_back(const queue_type &qt)
+		TC_ThreadQueue<T, D>::push_front(const T& t)
+		TC_ThreadQueue<T, D>::push_front(const queue_type &qt)
+		TC_ThreadQueue<T, D>::swap(queue_type &q, size_t millsecond)
+		TC_ThreadQueue<T, D>::size() const
+		TC_ThreadQueue<T, D>::clear()
+		TC_ThreadQueue<T, D>::empty() const
+	#endif

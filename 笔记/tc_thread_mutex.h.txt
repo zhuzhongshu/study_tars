@@ -1,0 +1,18 @@
+互斥锁
+	TC_ThreadMutex methods //PTHREAD_MUTEX_ERRORCHECK锁的封装
+		TC_ThreadMutex()//初始化锁
+		~TC_ThreadMutex()
+		lock() const//pthread_mutex_lock的封装
+		tryLock() const//pthread_mutex_trylock的封装
+		unlock() const
+		count() const//没用
+		count(int c) const//没用
+	TC_ThreadRecMutex methods //PTHREAD_MUTEX_RECURSIVE锁的封装（循环锁）
+		TC_ThreadRecMutex() : _count(0)
+		~TC_ThreadRecMutex()
+		lock() const //如果已经上锁，则不会再次上锁（先锁了再解锁）
+		unlock() const
+		tryLock() const
+		willUnlock() const
+		count() const//计数清零
+		count(int c) const//计数设置为c

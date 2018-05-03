@@ -1,0 +1,27 @@
+线程管理类
+用法是继承该类，并实现run函数，然后调用start函数启动执行
+		TC_ThreadThreadControl_Exception : public TC_Exception
+			TC_ThreadThreadControl_Exception(const string &buffer) : TC_Exception(buffer){}
+			TC_ThreadThreadControl_Exception(const string &buffer, int err) : TC_Exception(buffer, err){}
+			~TC_ThreadThreadControl_Exception() throw() {}
+		TC_ThreadControl
+        通过线程号控制线程的类
+		TC_Runable
+		TC_Thread : public TC_Runable
+		线程主类
+			public:
+				TC_Thread();
+				~TC_Thread(){}
+				start();//启动线程，返回TC_ThreadControl对象，内部调用pthread_create函数创建线程并执行threadEntry函数
+				getThreadControl() const;
+				isAlive() const;
+				id() { return _tid; }
+			protected:
+				threadEntry(TC_Thread *pThread);//线程入口函数，内部调用run函数具体执行任务
+				run() = 0;//这是具体执行任务的函数，只是一个接口，需要重载
+			protected:
+				_running;
+				_tid;
+				_lock;
+
+

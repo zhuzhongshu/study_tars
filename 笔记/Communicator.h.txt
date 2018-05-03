@@ -1,0 +1,64 @@
+通信器类
+每个通信器类对应多个客户端线程，数目用_clientThreadNum指定。 
+每个客户端线程有一个CommunicatorEpoll对象和一个ObjectProxy对象。
+
+通信器中有一个ServantProxyFactory对象，用于创建和保存ServantProxy（方法见ServantProxyFactory说明）。
+
+注意创建ServantProxy所需的servant信息都在stringToProxy传递的字符串里了，
+所以一个ServantProxyFactory可以创建多个不同的ServantProxy。
+
+
+
+
+		ClientConfig
+			LocalIp;
+			ModuleName;
+			SetLocalIp;
+			SetOpen;
+			SetDivision;
+			TarsVersion;
+		Communicator : public TC_HandleBase, public TC_ThreadRecMutex
+			public:
+				Communicator();
+				Communicator(TC_Config& conf, const string& domain = CONFIG_ROOT_PATH);
+				~Communicator();
+				stringToProxy(const string& objectName,const string& setName="")
+				stringToProxy(const string& objectName, T& proxy,const string& setName="")
+				getClientThreadNum()
+				getCommunicatorEpoll(size_t iNum)
+				getProperty(const string& name, const string& dft = "");
+				setProperty(const map<string, string>& properties);
+				setProperty(const string& name, const string& value);
+				setProperty(TC_Config& conf, const string& domain = CONFIG_ROOT_PATH);
+				getStatReport();
+				reloadProperty(string & sResult);
+				reloadLocator();
+				getEndpoint(const string & objName);
+				getEndpoint4All(const string & objName);
+				terminate();
+				getTimeoutLogFlag() { return _timeoutLogFlag; }
+				getMinTimeout() { return _minTimeout; }
+			protected:
+				initialize();
+				isTerminating();
+				initClientConfig();
+				servantProxyFactory();
+				getServantProxy(const string& objectName,const string& setName="");
+				AdapterProxy;
+				ServantProxy;
+				ObjectProxy;
+				ServantProxyFactory;
+				ObjectProxyFactory;
+				AsyncProcThread;
+				CommunicatorEpoll;
+			protected:
+				_initialized;
+				_terminating;
+				_properties;
+				_servantProxyFactory;
+				_communicatorEpoll[MAX_CLIENT_THREAD_NUM];
+				_clientThreadNum;
+				_statReport;
+				_timeoutLogFlag;
+				_minTimeout;
+	#endif

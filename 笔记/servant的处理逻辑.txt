@@ -1,0 +1,120 @@
+* 基本类
+
+** Servant
+	服务本身的基类，任何一个服务都要继承Servant。主要实现了任务分发(dispatch)，任务执行(onDispatch)
+*** onDispatch函数
+该函数的功能是根据收到的请求去调用Servant中对应的函数（即在jce中定义的接口）。该函数在Servant基类中是虚函数，具体代码是由
+代码生成器完成的，因为它需要知道Servant中具体定义了哪些接口。
+** ServantHandle
+操作Servant的类，其实是一个线程
+** Communicator
+	通信器，管理ServantProxy和一些基本属性，如染色信息、线程数、超时时间等。
+	一个Communicator可以包含多个不同的ServantProxy，实现多个服务的调用。
+** ServantProxy
+	远程servant的本地代理管理类，包含一组相同的ObjectProxy，数目跟Communicator的线程数目一样
+** ObjectProxy
+	远程对象真正的本地代理，每一个代理都可以绑定多个端口，
+** AdaptorProxy
+	远程对象的端口类，数据最后被发送的地方
+** CommunicatorEpoll
+	客户端epoll线程，和服务端epoll线程一样，可以有多个。每个CommunicatorEpoll监控多个输入/输出socket，socket数据放在
+	_nofity中
+
+* 客户端
+首先创建一个通信器comm=Communicator，其中保存了一些基本的配置信息，如网络线程数_clientThreadNum
+
+调用时，首先选择ServantProxy以及对应要调用的函数，然后框架会自动选择一个ObjectProxy，ObjectProxy又会选择一个端口，然后把
+调用请求发到这个端口上。
+
+ServantProxy中实现了跟对应Servant同名的函数（即在tars文件中定义的interface），但是内部实际上是调用了
+tars_invoke/tars_invoke_async函数。其中入参req和出参rsp被写入到tars_invoke
+
+** HelloProxy中的远程调用函数
+funcname()
+async_funcname()
+coro_funcname()
+服务端
+服务端会定义一个Application的子类，其中包含epoll（调度），communicator（作为客户端调用其他服务）,adaptor（管理绑定端口以及），servant（服务的具体实现）
+
+在生成服务时（服务名以Hello为例），tars2cpp会生成Hello.h文件，文件中包含两个类HelloProxy:ServantProxy以及
+Hello:Servant。第一个类是给客户端用的，第二个是服务端的实现。即客户端通过HelloProxy来远程调用Hello。
+一般来说，要实现一个服务的话，HelloProxy的代码都是自动生成的，无需用户关注（因为它实现的是框架的远程调用功能），
+用户只需要实现自己的业务逻辑接口即可（在Hello中定义为虚函数，需要给出具体实现）。
+此外Hello.h还有一些callback、promise之类的代码，以支持异步调用。
+
+一个同步远程调用的流程：
+
+客户端首先生成服务端对应的ServantProxy类，然后通过它在本地执行服务端函数的调用（就像调用本地函数一样）。
+ServantProxy内部会将该调用序列化，通过网络发送出去。
+服务端在启动时会初始化Application的子类对象，生成若干个ServantHandle对象（每个对应一个线程），内部实现Servant的服务
+服务端接收调用请求，进行反序列化，得到本地调用的函数名以及参数，执行本地调用（这部分代码由tars2cpp自动生成）。
+服务端调用结束后，如果需要回包，就把调用结果序列化，通过epoll发回给客户端
+
+
+
+
+是哪些函数在使用ServantProxyThreadData
+1. ServantProxy.invoke() 被客户端主线程调用
+2. CommunicatorEpoll::run() 每一个客户端网络线程都有一份ServantProxyThreadData，会设置
+
+
+
+* tars2cpp生成的头文件
+
+
+* 协程的实现方式
+
+通过boost.context实现，参见示例代码：
+namespace ctx = boost::context;
+
+ctx::fcontext_t fcm, * fc1, * fc2;
+
+void f1( intptr_t)
+{
+        std::cout << "f1: entered" << std::endl;
+        std::cout << "f1: call jump_fcontext( fc1, fc2, 0)" << std::endl;
+        ctx::jump_fcontext( fc1, fc2, 0);
+        std::cout << "f1: return" << std::endl;
+        ctx::jump_fcontext( fc1, & fcm, 0);
+}
+
+void f2( intptr_t)
+{
+        std::cout << "f2: entered" << std::endl;
+        std::cout << "f2: call jump_fcontext( fc2, fc1, 0)" << std::endl;
+        ctx::jump_fcontext( fc2, fc1, 0);
+        BOOST_ASSERT( false && ! "f2: never returns");
+}
+
+int main( int argc, char * argv[])
+{
+        ctx::guarded_stack_allocator alloc;
+        void * sp1( alloc.allocate(ctx::minimum_stacksize()));
+        std::size_t size( ctx::guarded_stack_allocator::minimum_stacksize());
+
+        fc1 = ctx::make_fcontext( sp1, size, f1);
+        fc2 = ctx::make_fcontext( sp2, size, f2);
+
+        std::cout << "main: call jump_fcontext( & fcm, fc1, 0)" << std::endl;
+        ctx::jump_fcontext( & fcm, fc1, 0);
+
+        std::cout << "main: done" << std::endl;
+
+        return EXIT_SUCCESS;
+}
+程序输出为：
+    main: call jump_fcontext( & fcm, & fc1, 0)
+    f1: entered
+    f1: call jump_fcontext( & fc1, & fc2, 0)
+    f2: entered
+    f2: call jump_fcontext( & fc2, & fc1, 0)
+    f1: return
+    main: done
+* 协程调用方式
+可以分为两类：
+- 自写线程中采用协程方式调用其他服务
+这时可以直接继承框架的Coroutine类，该类在启动新线程时会设置线程私有数据ServantProxyThreadData中的协程调度器（通过handleCoro成员函数），这样该线程在异步调用其他服务时会自动走协程处理的逻辑
+但是会有个问题，每次调用时都要启动一个新线程，比较麻烦【有无解决方案？】
+- tars框架服务中采用协程方式调用其他服务
+	
+

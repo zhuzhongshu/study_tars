@@ -1,0 +1,29 @@
+基于int类型的原子计数类，多线程下不用锁也能保证+-的原子操作
+		#define TARS_LOCK "lock ; "
+		struct { volatile int counter; }
+			counter;
+		tars_atomic_t;
+		#defines
+		TC_Atomic
+			public:
+				atomic_type;
+				TC_Atomic(atomic_type at = 0)
+				operator++()
+				operator--()
+				operator atomic_type() const
+				operator+=(atomic_type n)
+				operator-=(atomic_type n)
+				operator=(atomic_type n)
+				get() const { return _value.counter; }
+				add(atomic_type i) { return add_and_return(i); }
+				sub(atomic_type i) { return add_and_return(-i); }
+				inc() { return add(1); }
+				dec() { return sub(1); }
+				inc_fast()
+				dec_and_test()
+				set(atomic_type i)
+			protected:
+				add_and_return(int i)
+			protected:
+				_value;
+	#endif

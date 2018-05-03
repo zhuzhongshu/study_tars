@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\cpp",
+    "\\cpp\\examples",
+    "\\cpp\\examples\\CoroutineDemo",
+    "\\cpp\\examples\\CoroutineDemo\\testParallelCoro",
+    "\\cpp\\servant",
+    "\\cpp\\servant\\libservant",
+    "\\cpp\\servant\\servant",
+    "\\cpp\\servant\\tup",
+    "\\cpp\\util"
+  ],
+  "SelectedNode": "\\cpp\\examples\\CoroutineDemo\\testParallelCoro\\main.cpp",
+  "PreviewInSolutionExplorer": false
+}

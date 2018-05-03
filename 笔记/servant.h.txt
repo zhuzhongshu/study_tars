@@ -1,0 +1,58 @@
+1. dispatch函数是谁在调用，调用时current是怎么设置的？
+	是servantHandle在调用，current也是servantHandle生成的
+2. onDispatch是虚函数，要每个具体的服务去重载。该重载函数由tars2cpp自动生成，真正的函数调用就是在这里实现的。
+   另外jce生成的函数会在接口最后面自动加一个TarsCurrent类型的参数。
+		BaseNotify;
+		Servant : public BaseNotify
+			public:
+				Servant();
+				~Servant();
+				setName(const string &name);
+				getName() const;
+				setHandle(TC_EpollServer::Handle* handle);
+				getHandle();
+				initialize() = 0;
+				destroy() = 0;
+			public:
+				dispatch(TarsCurrentPtr current, vector<char> &buffer);
+				onDispatch(TarsCurrentPtr current, vector<char> &buffer) { return -1; }
+			public:
+				doRequest(TarsCurrentPtr current, vector<char> &buffer) { return -1; }
+				doResponse(ReqMessagePtr resp) { return -1; }
+				doResponseException(ReqMessagePtr resp) { return -1; }
+				doResponseNoRequest(ReqMessagePtr resp) { return -1; }
+				doCustomMessage(bool bExpectIdle) { return -1; }
+				doCustomMessage() { return -1; }
+				doClose(TarsCurrentPtr current){ return -1; }
+				getResponseQueue();
+			protected:
+				_name;
+				_handle;
+				_asyncResponseQueue;
+		ServantPtr;
+		ServantCallback : public ServantProxyCallback
+			public:
+				ServantCallback(const string& type, const ServantPtr& servant, const TarsCurrentPtr& current);
+				onDispatch(ReqMessagePtr msg);
+				getServant();
+				getCurrent();
+			protected:
+				_servant;
+				_current;
+		CallbackThreadData : public TC_ThreadPool::ThreadData
+			public:
+				_mutex;
+				_key;
+				CallbackThreadData();
+				~CallbackThreadData() {}
+				destructor(void* p);
+				getData();
+			public:
+				setResponseContext(const map<std::string, std::string> & context);
+				getContextValid(){return _contextValid;}
+				getResponseContext();
+				delResponseContext();
+			private:
+				_contextValid;
+				_responseContext;
+	#endif

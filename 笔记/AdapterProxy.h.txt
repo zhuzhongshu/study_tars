@@ -1,0 +1,62 @@
+服务端端口代理类。
+远程调用请求数据最终会走到这里，然后用_trans进行收发
+发送数据首先被放在超时队列里，再依次发送
+		AdapterProxy
+			public:
+				AdapterProxy(ObjectProxy * pObjectProxy, const EndpointInfo &ep, Communicator* pCom);
+				~AdapterProxy();
+				invoke(ReqMessage * msg);
+				doInvoke();
+				finishInvoke(ResponsePacket &rsp);
+				checkActive(bool bForceConnect = false);
+				addConnExc(bool bExc);
+				doTimeout();
+				doStat(map<StatMicMsgHead, StatMicMsgBody> & mStatMicMsg);
+				sample(ReqMessage * msg);
+				getObjProxy() { return _objectProxy; }
+				endpoint() const { return _endpoint; }
+				getConTimeout();
+				isConnTimeout() { return _connTimeout; }
+				setConTimeout(bool bConTimeout);
+				isConnExc() { return _connExc; }
+				ConnExcCnt() const { return _connExcCnt; }
+				isActiveInReg() { return _activeStateInReg; }
+				setActiveInReg(bool bActive) { _activeStateInReg = bActive; }
+				trans() { return _trans; }
+				setWeight(int iWeight) { _staticWeight = iWeight; }
+				getWeight() { return _staticWeight; }
+			private:
+				setInactive();
+			private:
+				finishInvoke(ReqMessage * msg);
+				finishInvoke(bool bTimeout);
+				initStatHead();
+				stat(ReqMessage * msg);
+				merge(const StatMicMsgBody& inBody, StatMicMsgBody& outBody);
+				getSlaveName(const string& sSlaveName);
+			private:
+				_communicator;
+				_objectProxy;
+				_endpoint;
+				_trans;
+				_timeoutQueue;
+				_activeStateInReg;
+				_activeStatus;
+				_totalInvoke;
+				_timeoutInvoke;
+				_nextFinishInvokeTime;
+				_frequenceFailInvoke;
+				_frequenceFailTime;
+				_nextRetryTime;
+				_connTimeout;
+				_connExc;
+				_connExcCnt;
+				_staticWeight;
+				_timeoutLogFlag;
+				_noSendQueueLimit;
+				_statHead;
+				_statBody;
+				_maxSampleCount;
+				_sampleRate;
+				_sample;
+	#endif

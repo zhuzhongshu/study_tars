@@ -1,0 +1,63 @@
+客户端的Epoll封装，负责发送数据。
+这个epoll发送的数据是FDInfo格式，首先转换成long long指针放在data.u64里面，然后epoll_wait返回后再转化成FDInfo指针
+		Communicator;
+		ObjectProxy;
+		ObjectProxyFactory;
+		StatReport;
+		PropertyReport;
+		FDInfo
+			enum
+			FDInfo() : iSeq(0) , fd(-1) , iType(ET_C_NOTIFY) , p(NULL)
+			~FDInfo()
+			iSeq;
+			fd;
+			iType;
+			p;
+		CommunicatorEpoll : public TC_Thread ,public TC_ThreadRecMutex
+			public:
+				NotifyInfo
+					NotifyInfo() : eventFd(-1) , bValid(false)
+					~NotifyInfo()
+					stFDInfo;
+					notify;
+					eventFd;
+					bValid;
+				CommunicatorEpoll(Communicator * pCommunicator, size_t _netThreadSeq);
+				~CommunicatorEpoll();
+				getCommunicator()
+				getObjectProxyFactory()
+				getCommunicatorEpollId()
+				getNoSendQueueLimit()
+				isFirstNetThread()
+				getObjectProxy(const string & sObjectProxyName,const string& setName="");
+				run();
+				terminate();
+				addFd(int fd,FDInfo * info, uint32_t events);
+				delFd(int fd,FDInfo * info, uint32_t events);
+				notify(size_t iSeq,ReqInfoQueue * pReqQueue);
+				notifyDel(size_t iSeq);
+				pushAsyncThreadQueue(ReqMessage * msg);
+			protected:
+				handle(FDInfo * pFDInfo, uint32_t events);
+				handleInputImp(Transceiver * pTransceiver);
+				handleOutputImp(Transceiver * pTransceiver);
+				doTimeout();
+				doStat();
+			protected:
+				_communicator;
+				_notify[MAX_CLIENT_NOTIFYEVENT_NUM];
+				_shutdown;
+				_terminate;
+				_ep;
+				_nextTime;
+				_nextStatTime;
+				_objectProxyFactory;
+				_asyncThread[MAX_CLIENT_ASYNCTHREAD_NUM];
+				_asyncThreadNum;
+				_asyncSeq;
+				_netThreadSeq;
+				_reportAsyncQueue;
+				_noSendQueueLimit;
+				_waitTimeout;
+				_timeoutCheckInterval;
+	#endif

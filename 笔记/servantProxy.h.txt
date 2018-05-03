@@ -1,0 +1,83 @@
+远程对象（服务端）的本地代理，通过它来调用远程对象，即客户端远程调用服务端时，通过服务对应的ServantProxy来实现调用。
+ServantPRoxy通常都是由Communicator.ServantProxyFactory来负责初始化。
+
+一般一个server（比如叫Hello）在自动生成代码时，会定义一个ServantProxy的子类型HelloProxy，然后用智能指针管理该
+子类型：typedef tars::TC_AutoPtr<HelloProxy> HelloPrx;
+客户端在调用时，直接引用相关头文件，然后利用Communicator根据指定服务名以及所在地址与端口，就可以初始化一个HelloPrx
+对象prx，后续所有Hello服务提供的接口都可以全部用该prx实现。
+
+
+该类对Servant中定义的接口函数做了封装，原本的函数funcname在这里会生成一个同名的funcname函数用作同步调用，还会生成一个async_funcname函数用作异步调用
+
+		SeqManager
+		ServantProxyThreadData : public TC_ThreadPool::ThreadData
+		CoroParallelBase : virtual public TC_HandleBase
+		CoroParallelBasePtr;
+		coroWhenAll(const CoroParallelBasePtr &ptr);
+		ServantProxyCallback : virtual public TC_HandleBase
+		EndpointManagerThread;
+		ServantProxy : public TC_HandleBase, public TC_ThreadMutex
+			public:
+				STATUS_DYED_KEY;
+				STATUS_GRID_KEY;
+				STATUS_SAMPLE_KEY;
+				STATUS_RESULT_CODE;
+				STATUS_RESULT_DESC;
+				STATUS_SETNAME_VALUE;
+				TARS_MASTER_KEY;
+				enum { DEFAULT_SYNCTIMEOUT = 3000, DEFAULT_ASYNCTIMEOUT=5000};
+				ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObjectProxy, size_t iClientThreadNum);
+				~ServantProxy();
+			public:
+				tars_endpoints(vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				tars_endpointsAll(vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				tars_endpointsBySet(const string & sName,vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				tars_endpointsByStation(const string & sName,vector<EndpointInfo> &activeEndPoint, vector<EndpointInfo> &inactiveEndPoint);
+				tars_endpoints(const std::string & sStation);
+				tars_endpoints(const std::string & sStation, vector<TC_Endpoint> & vecActive, vector<TC_Endpoint> & vecInactive);
+				getEndpoint();
+				getEndpoint4All();
+			public:
+				tars_communicator() { return _communicator; }
+				tars_ping();
+				tars_timeout(int msecond);
+				tars_timeout() const;
+				tars_connect_timeout(int conTimeout);
+				tars_name() const;
+				tars_invoke_endpoint();
+				tars_set_protocol(const ProxyProtocol& protocol);
+				tars_set_sockopt(int level, int optname, const void *optval, socklen_t optlen);
+				tars_set_check_timeout(const CheckTimeoutInfo& checkTimeoutInfo);
+				tars_get_check_timeout();
+				tars_hash(int64_t key);
+				tars_consistent_hash(int64_t key);
+				tars_clear_hash();
+				tars_set_timeout(int msecond);
+				tars_async_timeout(int msecond);
+				tars_async_timeout() const;
+				tars_gen_requestid();
+				tars_set_push_callback(const ServantProxyCallbackPtr& cb);
+				tars_invoke(char cPacketType, const string& sFuncName, const vector<char> &buf, const map<string, string>& context, const map<string, string>& status, ResponsePacket& rep);
+				tars_invoke_async(char cPacketType, const string& sFuncName, const vector<char> &buf, const map<string, string>& context, const map<string, string>& status, const ServantProxyCallbackPtr& callback, bool bCoro = false);
+				rpc_call(uint32_t requestId, const string& sFuncName, const char* buff, uint32_t len, ResponsePacket& rsp);
+				rpc_call_async(uint32_t requestId, const string& sFuncName, const char* buff, uint32_t len, const ServantProxyCallbackPtr& callback, bool bCoro = false);
+				tars_setMasterFlag(bool bMasterFlag) {_masterFlag = bMasterFlag;}
+			private:
+				invoke(ReqMessage * msg, bool bCoroAsync = false);
+				finished(ReqMessage * msg);
+				selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectProxy * & pObjProxy, ReqInfoQueue * & pReqQ);
+				checkDye(RequestPacket& req);
+			private:
+				ObjectProxy;
+				AdapterProxy;
+				_communicator;
+				_objectProxy;
+				_objectProxyNum;
+				_syncTimeout;
+				_asyncTimeout;
+				_id;
+				_endpointInfo;
+				_masterFlag;
+				_queueSize;
+				_minTimeout;
+	#endif

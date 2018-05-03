@@ -1,0 +1,83 @@
+Application是真正的服务类
+内部包含TC_EpollServerPtr和CommunicatorPtr两个智能指针，分别指向TC_EpollServerPtr和Communicator，负责服务端和客户端的处理
+initializeClient()：初始化Application的客户端部分，用来调用其他服务
+initializeServer()：初始化Application的服务端部分，用来接收并处理外部调用
+
+Application有BindAdaptor对象
+		#defines
+		ServerConfig
+			Application;
+			ServerName;
+			BasePath;
+			DataPath;
+			LocalIp;
+			LogPath;
+			LogSize;
+			LogNum;
+			LogLevel;
+			Local;
+			Node;
+			Log;
+			Config;
+			Notify;
+			ConfigFile;
+			ReportFlow;
+			IsCheckSet;
+			OpenCoroutine;
+			CoroutineMemSize;
+			CoroutineStackSize;
+		Application : public BaseNotify
+			public:
+				enum
+			public:
+				Application();
+				~Application();
+				//服务初始化函数，包括解析配置文件，启动业务处理线程，启动epoll服务线程等等
+				//主要工作在initializeServer和initializeClient中做了
+				main(int argc, char *argv[]);
+				waitForShutdown();
+			public:
+				getConfig();
+				getCommunicator();
+				getEpollServer();
+				terminate();
+				addConfig(const string &filename);
+				addAppConfig(const string &filename);
+			protected:
+				initialize() = 0;
+				destroyApp() = 0;
+				cmdLoadConfig(const string& command, const string& params, string& result);
+				cmdSetLogLevel(const string& command, const string& params, string& result);
+				cmdCloseCoreDump(const string& command, const string& params, string& result);
+				cmdEnableDayLog(const string& command, const string& params, string& result);
+				cmdViewStatus(const string& command, const string& params, string& result);
+				cmdConnections(const string& command, const string& params, string& result);
+				cmdViewVersion(const string& command, const string& params, string& result);
+				cmdLoadProperty(const string& command, const string& params, string& result);
+				cmdViewAdminCommands(const string& command, const string& params, string& result);
+				cmdSetDyeing(const string& command, const string& params, string& result);
+				cmdCloseCout(const string& command, const string& params, string& result);
+				cmdReloadLocator(const string& command, const string& params, string& result);
+			protected:
+				setHandle(TC_EpollServer::BindAdapterPtr& adapter);
+				addServant(const string &id)
+				addServantProtocol(const string& servant, const TC_EpollServer::protocol_functor& protocol);
+			protected:
+				initializeClient();
+				outClient(ostream &os);
+				initializeServer();
+				outServer(ostream &os);//输出服务信息
+				outAllAdapter(ostream &os);
+				outAdapter(ostream &os, const string &v, TC_EpollServer::BindAdapterPtr lsPtr);
+				parseConfig(int argc, char *argv[]);
+				parseOrder(const string &s);
+				bindAdapter(vector<TC_EpollServer::BindAdapterPtr>& adapters);
+				checkServantNameValid(const string& servant, const string& sPrefix);
+				toDefault(const string &s, const string &sDefault);
+				setDivision(void);
+				waitForQuit();
+			protected:
+				_conf;
+				_epollServer;
+				_communicator;
+	#endif

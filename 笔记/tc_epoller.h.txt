@@ -1,0 +1,22 @@
+epoll相关调用的封装接口类
+注意该类型中，epoll_event.data使用的是其成员变量u64，而不是一般常见的fd。
+add/mod/del函数中的参数 long long data最后被赋值给epoll_event.data.u64。
+由于epoll_event.data是联合类型，只有一个值可以存在，所以在使用的时候，如果需要fd信息，要想办法把它放进long long data中
+		TC_Epoller
+			public:
+				TC_Epoller(bool bEt = true);
+				~TC_Epoller();
+				create(int max_connections);
+				add(int fd, long long data, __uint32_t event);
+				mod(int fd, long long data, __uint32_t event);
+				del(int fd, long long data, __uint32_t event);
+				wait(int millsecond);
+				get(int i) { assert(_pevs != 0); return _pevs[i]; }
+			protected:
+				ctrl(int fd, long long data, __uint32_t events, int op);
+			protected:
+				_iEpollfd;
+				_max_connections;
+				_pevs;
+				_et;
+	#endif

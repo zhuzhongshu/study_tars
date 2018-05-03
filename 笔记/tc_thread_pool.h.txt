@@ -1,0 +1,88 @@
+线程池类，维护一个_jobqueue线程队列，并启动若干个线程(以ThreadWorker的形式)循环从_jobqueue中获取任务(FunctorWrapper)来执行。
+类中包含ThreadData成员类用于实现线程安全函数。
+注意线程池类中有两个任务队列_jobqueue和_startqueue，二者的区别如下：
+_jobqueue：存储的是线程池需要完成的实际任务，每个ThreadWorker都会循环从中获取新任务，直到被终止
+_startqueue：存储的是N个相同的任务，任务个数与ThreadWorker个数相同，每个ThreadWorker都只会执行一次_startqueue中的数据
+
+具体用法如下：
+1. 新建一个线程类
+2. 调用init函数执行初始化操作，设定工作线程个数
+3. 调用start函数启动线程（可以传入线程初始化函数）
+4. 调用exec函数添加任务到_jobqueue
+5. 
+             一般是用来做线程的初始化工作
+		TC_ThreadPool_Exception : public TC_Exception
+			TC_ThreadPool_Exception(const string &buffer) : TC_Exception(buffer){}
+			TC_ThreadPool_Exception(const string &buffer, int err) : TC_Exception(buffer, err){}
+			~TC_ThreadPool_Exception() throw(){}
+		TC_ThreadPool : public TC_ThreadLock
+			public:
+				TC_ThreadPool();//基本不做任何事，具体初始化工作放到init里
+				~TC_ThreadPool();
+				init(size_t num);//初始化num个ThreadWorker
+				getThreadNum() { Lock sync(*this); return _jobthread.size(); }
+				getJobNum() { return _jobqueue.size(); }
+				stop();//停止所有的ThreadWorker，循环调用terminate函数
+				//start有两个同名函数，一个是不接受任何参数的【1】，另一个是模板函数【2】，其中【2】接收一个FunctorWrapper，
+				//线程池中所有线程都执行该操作（一般用于初始化），内部还是调用【1】来实际启动线程
+				//【1】的具体启动流程如下：
+				//1. 对_jobthread中的每个ThreadWorker，都调用其对应的start函数
+				//2. ThreadWorker继承了TC_Thread，start内部是调用ThreadWorker重载的run函数执行具体的操作
+				//3. 该run函数循环调用TC_ThreadPool的get函数获取一个FunctorWrapper然后执行它，直到收到停止指令【有线程让_bTerminate为True】
+				//4. 具体的任务代码和参数被封装在FunctorWrapper中
+				
+				start();//【1】
+				start(const TC_FunctorWrapper<ParentFunctor> &tf)//【2】
+				//是个模板函数，接收任务放到_jobqueue中等待处理，【借助tc_functor的设计，使得其可以支持各类函数的调用】
+				exec(const TC_FunctorWrapper<ParentFunctor> &tf)
+				//等待millsecond后返回任务是否全部完成，若millsecond<0则一直等待到所有任务都完成才返回
+				waitForAllDone(int millsecond = -1);
+			public:
+				//每个线程的私有数据，用于实现线程可重入函数
+				ThreadData
+					public:
+						ThreadData(){}
+						~ThreadData(){}
+						makeThreadData()
+				setThreadData(ThreadData *p);
+				getThreadData();
+				setThreadData(pthread_key_t pkey, ThreadData *p);
+				getThreadData(pthread_key_t pkey);
+			protected:
+				destructor(void *p);
+				KeyInitialize
+					public:
+						KeyInitialize()
+						~KeyInitialize()
+				g_key_initialize;
+				g_key;
+			protected:
+				//具体的工作线程，每个ThreadWoker都负责起一个线程，而且类中包含了该线程的“私有”数据 _bTerminate，
+				//用于控制线程的启停
+				ThreadWorker : public TC_Thread
+					public:
+						//TC_ThreadPool中的ThreadWorker需要获取自身的地址以使用任务队列等成员变量
+						ThreadWorker(TC_ThreadPool *tpool);
+						terminate();//设置_bTerminate为true
+					protected:
+						run();//重载TC_Thread中的run函数，实际上是调用_jobqueue中的functor来执行具体任务
+					protected:
+						_tpool;
+						_bTerminate;
+			protected:
+				clear();
+				get(ThreadWorker *ptw);//获取_jobqueue中的任务
+				get();//获取_startqueue中的任务
+				idle(ThreadWorker *ptw);//把ptw从_busthread移除，ThreadWorker每次执行完一个任务都会调用它
+				notifyT();
+				finish();//判断所有任务是否都已完成
+				exit();//被ThreadWorker线程调用，清除线程特有数据
+				ThreadWorker;
+			protected:
+				_jobqueue;//所有任务队列，储存的是N个不同的FunctorWrapper
+				_startqueue;//初始化任务队列，储存的是N个相同的FunctorWrapper
+				_jobthread;
+				_busthread;//繁忙中的线程（是集合类型）
+				_tmutex;//保护集合_busthread的锁，同时waitForAllDone函数会等待在该线程锁上，等待_busthread为空时被唤醒
+				_bAllDone;
+	#endif

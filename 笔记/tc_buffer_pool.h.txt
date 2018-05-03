@@ -1,0 +1,45 @@
+缓冲池管理类。文件包含TC_Slice、TC_BufferPool两个类。
+TC_Slice：表示一块内存空间
+TC_BufferPool：缓冲池
+TC_BufferPool的实现技术如下：
+类用list容器（BufferList）存储指向具体数据块的指针，然后用一个向量容器（_buffers）管理多个list，_buffers的大致结构如下：
+
+|[addr1,addr2,addr3....]|//每个地址指向的数据块大小为_minBlock
+|[addr1,addr2,addr3....]|//每个地址指向的数据块大小为_minBlock*2
+|[addr1,addr2,addr3....]|//每个地址指向的数据块大小为_minBlock*4
+|[addr1,addr2,addr3....]|//每个地址指向的数据块大小为_minBlock*8
+|[addr1,addr2,addr3....]|                  .
+             .                             .
+             .                             .
+			 .                             .
+|[addr1,addr2,addr3....]|//每个地址指向的数据块大小为_minBlock*(2**N)>=_maxBlock	
+
+
+初始的时候所有BufferList都为空，直到调用Deallocate(TC_Slice s)时，相应BufferList才会记录TC_Slice指向的数据块，如果下次用到的话直接分配该地址
+如果指定的TC_Slice大小小于_minBlock或者大于_maxBlock，就直接分配给它，并且不会记录到BufferList中
+
+		TC_Slice
+			TC_Slice(void* d = NULL , size_t ds = 0, size_t l = 0);
+			data;
+			dataLen;
+			len;
+		TC_BufferPool
+			public:
+				TC_BufferPool(size_t minBlock, size_t maxBlock);
+				~TC_BufferPool();
+				Allocate(size_t size);
+				Deallocate(TC_Slice s);
+				SetMaxBytes(size_t bytes);
+				GetMaxBytes() const;
+				DebugPrint() const;
+			private:
+				BufferList;
+				_Allocate(size_t size, BufferList& blist);
+				_GetBufferList(size_t s);
+				_GetBufferList(size_t s) const;
+				_buffers;//vector<BufferList>
+				_minBlock;//缓冲池负责管理的最小块，2的整数倍
+				_maxBlock;//缓冲池负责管理的最大块，2的整数倍
+				_maxBytes;//缓冲池负责管理的最大总内存，超过该数值后就不能再管理新的内存了
+				_totalBytes;//当前管理的总内存数
+	#endif

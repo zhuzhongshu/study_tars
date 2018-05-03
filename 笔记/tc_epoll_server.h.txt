@@ -1,0 +1,388 @@
+epollServer类，该类中又定义了以下几个子类：
+Handle：具体业务逻辑的实现，有很多函数没有定义，需要继承后定义（如handleAsyncResponse、startHandle、stopHandle..）
+BindAdapter：端口连接属性的管理
+
+NetThread：epoll线程，每个NetThread都可以绑定多个连接端口。事实上epollserver调用bind时，所有网络线程都会绑定到该端口上
+			在Application中使用的是start接口（即重载的run接口）
+
+类的嵌套关系：
+TC_EpollServer
+	NetThread epoll_ctl的实现者，负责从网络接收连接并将连接放到相应Adaptor的send/recv队列中
+		Connection 负责具体send/recv、协议解析的实现，它把数据放到BindAdapter的send/recv队列中
+		ConnectionList 带有时间链表的map
+	Handle  具体业务逻辑的实现，它从Adaptor的send/recv队列中获取数据并做具体处理。
+			每个Handle对象都是一个线程，主要逻辑在HandleImp中，该函数通过run被调用。
+			注意HandleImp只是个调用框架，里面具体执行的动作并没有实现，如startHandle等。
+			一般是通过servantHandle来继承Handle类，并实例化具体执行函数来实现的
+			【TC_EpollServer不直接保存handle成员，而是通过handlegroup】
+	HandleGroup 按name对Handle分组，每组Handle处理一个或多个Adapter消息
+	BindAdapter 管理服务器绑定的端口相关信息，send/recv数据队列也放在这儿【TC_EpollServer本身没有BindAdapter成员，而是通过NetThread的_listener成员保存BindAdaptor对象】
+	tagRecvData 接收消息的数据格式
+	tagSendData 发送消息的数据格式
+	
+epoll相关的操作（epoll_creat、epoll_ctrl、epoll_wait）被封装到了TC_Epoller中
+		TC_EpollServer : public TC_ThreadLock, public TC_HandleBase
+			public:
+				enum
+				EM_CLOSE_T
+				protocol_functor;
+				header_filter_functor;
+				NetThread;
+				BindAdapter;
+				BindAdapterPtr;
+				Handle;
+				HandlePtr;
+				HandleGroup;
+				HandleGroupPtr;
+				tagRecvData
+					uid;
+					buffer;
+					ip;
+					port;
+					recvTimeStamp;
+					isOverload;
+					isClosed;
+					fd;
+					adapter;
+					closeType;
+				tagSendData
+					cmd;
+					uid;
+					buffer;
+					ip;
+					port;
+				recv_queue;//接收数据的队列，
+				send_queue;
+				recv_queue_type;
+				ConnStatus
+					ip;
+					uid;
+					port;
+					timeout;
+					iLastRefreshTime;
+				HandleGroup : public TC_HandleBase
+					name;
+					monitor;
+					handles;
+					adapters;
+				Handle : public TC_Thread, public TC_ThreadLock, public TC_HandleBase
+					public:
+						Handle();
+						~Handle();
+						setEpollServer(TC_EpollServer *pEpollServer);
+						getEpollServer();
+						setHandleGroup(HandleGroupPtr& pHandleGroup);
+						getHandleGroup();
+						run();
+					public:
+						sendResponse(unsigned int uid, const string &sSendBuffer, const string &ip, int port, int fd);
+						close(unsigned int uid, int fd);
+						setWaitTime(uint32_t iWaitTime);
+						initialize() {}
+						notifyFilter();
+					protected:
+						handleImp();
+						handle(const tagRecvData &stRecvData) = 0;
+						handleTimeout(const tagRecvData &stRecvData);
+						handleClose(const tagRecvData &stRecvData);
+						handleOverload(const tagRecvData &stRecvData);
+						handleAsyncResponse() {}
+						handleCustomMessage(bool bExpectIdle = false) {}
+						heartbeat() {}
+						startHandle() {}
+						stopHandle() {}
+						allAdapterIsEmpty();
+						allFilterIsEmpty();
+						BindAdapter;
+					protected:
+						_pEpollServer;
+						_handleGroup;
+						_iWaitTime;
+				auth_process_wrapper_functor;
+				BindAdapter : public TC_ThreadLock, public TC_HandleBase
+					public:
+						enum
+						EOrder
+						BindAdapter()
+						BindAdapter(TC_EpollServer *pEpollServer);
+						~BindAdapter();
+						setName(const string &name);
+						getName() const;
+						getQueueCapacity() const;
+						setQueueCapacity(int n);
+						setProtocolName(const string& name);
+						getProtocolName();
+						isTarsProtocol();
+						isOverloadorDiscard();
+						setQueueTimeout(int t);
+						getQueueTimeout() const;
+						setEndpoint(const string &str);
+						getEndpoint() const;
+						getSocket();
+						setMaxConns(int iMaxConns);
+						getMaxConns() const;
+						setHeartBeatTime(time_t t);
+						getHeartBeatTime() const;
+						setOrder(EOrder eOrder);
+						setAllow(const vector<string> &vtAllow);
+						setDeny(const vector<string> &vtDeny);
+						getAllow() const;
+						getDeny() const;
+						getOrder() const;
+						isIpAllow(const string& ip) const;
+						isLimitMaxConnection() const;
+						decreaseNowConnection();
+						increaseNowConnection();
+						getConnStatus();
+						getNowConnection() const;
+						getEpollServer();
+						setProtocol(const protocol_functor& pf, int iHeaderLen = 0, const header_filter_functor& hf = echo_header_filter);
+						getProtocol();
+						getHeaderFilterFunctor();
+						insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
+						notifyRecvQueue();
+						waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+						getRecvBufferSize();
+						echo_protocol(string &r, string &o);
+						echo_header_filter(int i, string &o);
+						getHeaderFilterLen();
+						setHandleGroupName(const string& handleGroupName);
+						getHandleGroupName() const;
+						getHandleGroup() const
+						setHandleNum(int n);
+						getHandleNum();
+						setHandle(BindAdapterPtr& otherAdapter)
+						setHandle()
+						setBackPacketBuffLimit(size_t iLimitSize);
+						getBackPacketBuffLimit();
+						setAuthProcessWrapper(const auth_process_wrapper_functor& apwf) { _authWrapper = apwf; }
+						setAkSk(const std::string& ak, const std::string& sk) { _accessKey = ak; _secretKey = sk; }
+						checkAkSk(const std::string& ak, const std::string& sk) { return ak == _accessKey && sk == _secretKey; }
+						getSk(const std::string& ak) const { return (_accessKey == ak) ? _secretKey : ""; }
+					public:
+						_pReportQueue;
+						_pReportConRate;
+						_pReportTimeoutNum;
+					protected:
+						TC_EpollServer;
+						NetThread;
+						_pEpollServer;
+						_handleGroup;
+						_pf;
+						_hf;
+						_name;
+						_handleGroupName;
+						_s;//初始值为INVALID_SOCKET
+						_ep;
+						_iMaxConns;
+						_iCurConns;
+						_iHandleNum;
+						_eOrder;
+						_vtAllow;
+						_vtDeny;
+						_rbuffer;//接收的数据队列
+						_iQueueCapacity;
+						_iQueueTimeout;
+						_iHeaderLen;
+						_iHeartBeatTime;
+						_protocolName;
+						_iBackPacketBuffLimit;
+						_authWrapper;
+						_accessKey;
+						_secretKey;
+				NetThread : public TC_Thread, public TC_ThreadLock, public TC_HandleBase
+					public:
+						Connection
+							public:
+								EnumConnectionType
+								Connection(BindAdapter *pBindAdapter, int lfd, int timeout, int fd, const string& ip, uint16_t port);
+								Connection(BindAdapter *pBindAdapter, int fd);
+								Connection(BindAdapter *pBindAdapter);
+								~Connection();
+								getBindAdapter() { return _pBindAdapter; }
+								init(unsigned int uid) { _uid = uid; }
+								getTimeout() const { return _timeout; }
+								getId() const { return _uid; }
+								getListenfd() const { return _lfd; }
+								getfd() const { return _sock.getfd(); }
+								isValid() const { return _sock.isValid();}
+								getIp() const { return _ip; }
+								getPort() const { return _port; }
+								setHeaderFilterLen(int iHeaderLen) { _iHeaderLen = iHeaderLen; }
+								setClose();// { _bClose = true; return _sendbuffer.empty(); }
+								getType() const { return _enType; }
+								IsEmptyConn() const {return _bEmptyConn;}
+								tryInitAuthState(int initState);
+							protected:
+								close();
+								send(const string& buffer, const string &ip, uint16_t port, bool byEpollout = false);
+								send();
+								send(const std::vector<TC_Slice>& slices);
+								recv(recv_queue::queue_type &o);
+								parseProtocol(recv_queue::queue_type &o);
+								insertRecvQueue(recv_queue::queue_type &vRecvData);
+								setRecvBuffer(size_t nSize=DEFAULT_RECV_BUFFERSIZE);
+								NetThread;
+							private:
+								tcpSend(const void* data, size_t len);
+								tcpWriteV(const std::vector<iovec>& buffers);
+								clearSlices(std::vector<TC_Slice>& slices);
+								adjustSlices(std::vector<TC_Slice>& slices, size_t toSkippedBytes);
+							public:
+								_iLastRefreshTime;
+							protected:
+								_pBindAdapter;
+								_sock;
+								_uid;
+								//监听的socket,即负责listen的socket fd
+								//accept产生的socket fd以TC_Socket的形式放在_sock里
+								_lfd;
+								_timeout;
+								_ip;
+								_port;
+								_recvbuffer;
+								_sendbuffer;
+								_iHeaderLen;
+								_bClose;
+								_iMaxTemQueueSize;
+								_enType;
+								_bEmptyConn;
+								_pRecvBuffer;
+								_nRecvBufferSize;
+							public:
+								_authState;
+								_authInit;
+								#if TARS_SSL
+						ConnectionList : public TC_ThreadLock
+							public:
+								ConnectionList(NetThread *pEpollServer);
+								~ConnectionList() { if(_vConn) { delete[] _vConn; } }
+								init(uint32_t size, uint32_t iIndex = 0);
+								getUniqId();
+								add(Connection *cPtr, time_t iTimeOutStamp);
+								refresh(uint32_t uid, time_t iTimeOutStamp);
+								checkTimeout(time_t iCurTime);
+								getConnStatus(int lfd);
+								get(uint32_t uid);
+								del(uint32_t uid);
+								size();
+							protected:
+								list_data;
+								_del(uint32_t uid);
+							protected:
+								_pEpollServer;
+								_total;
+								_free;
+								_free_size;
+								_vConn;
+								_tl;
+								_lastTimeoutTime;
+								_iConnectionMagic;
+					public:
+						NetThread(TC_EpollServer *epollServer);
+						~NetThread();
+						bind(BindAdapterPtr &lsPtr);//把lsPtr放入_listeners中
+						run();
+						terminate();
+						createEpoll(uint32_t iIndex = 0);
+						initUdp();
+						isTerminate() const { return _bTerminate; }
+						getEpoller() { return &_epoller; }
+						getListenSocketInfo();
+						getBindAdapter(const string &sName);
+						close(unsigned int uid);
+						send(unsigned int uid, const string &s, const string &ip, uint16_t port);
+						getConnStatus(int lfd);
+						getConnectionCount() { return _list.size(); }
+						debug(const string &s);
+						info(const string &s);
+						error(const string &s);
+						EnAntiEmptyConnAttack(bool bEnable);
+						setEmptyConnTimeout(int timeout);
+						setUdpRecvBufferSize(size_t nSize=DEFAULT_RECV_BUFFERSIZE);
+						setListSize(size_t iSize) { _listSize += iSize; }
+						getSendRspSize();
+					protected:
+						getConnectionPtr(uint32_t uid) { return _list.get(uid); }
+						addTcpConnection(Connection *cPtr);
+						addUdpConnection(Connection *cPtr);
+						delConnection(Connection *cPtr, bool bEraseList = true,EM_CLOSE_T closeType=EM_CLIENT_CLOSE);
+						sendBuffer(Connection *cPtr, const string &buffer, const string &ip, uint16_t port);
+						sendBuffer(Connection *cPtr);
+						recvBuffer(Connection *cPtr, recv_queue::queue_type &v);
+						processPipe();
+						processNet(const epoll_event &ev);
+						stopThread();
+						accept(int fd);
+						bind(const TC_Endpoint &ep, TC_Socket &s);
+						getEmptyConnTimeout() const;
+						IsEmptyConnCheck() const;
+						enum
+						enum
+						enum
+						BindAdapter;
+						ConnectionList;
+						TC_EpollServer;
+					private:
+						_epollServer;
+						_listeners;//map<int, BindAdapterPtr>，key是fd，value是端口信息
+						_listSize;
+						_epoller;
+						_bTerminate;
+						_createEpoll;
+						_handleStarted;
+						_shutdown;
+						_notify;
+						_list;
+						_sbuffer;
+						_hasUdp;
+						_bEmptyConnAttackCheck;
+						_iEmptyCheckTimeout;
+						_nUdpRecvBufferSize;
+						_bufferPool;
+						_poolMinBlockSize;
+						_poolMaxBlockSize;
+						_poolMaxBytes;
+			public:
+				TC_EpollServer(unsigned int iNetThreadNum = 1);
+				~TC_EpollServer();
+				EnAntiEmptyConnAttack(bool bEnable);
+				setEmptyConnTimeout(int timeout);
+				setNetThreadBufferPoolInfo(size_t minBlock, size_t maxBlock, size_t maxBytes);
+				setLocalLogger(RollWrapperInterface *pLocalLogger) { _pLocalLogger = pLocalLogger; }
+				setHandleGroup(const string& groupName, BindAdapterPtr adapter)
+				setHandleGroup(const string& groupName, int32_t handleNum, BindAdapterPtr adapter)
+				getNetThreadOfFd(int fd)
+				bind(BindAdapterPtr &lsPtr);
+				startHandle();
+				createEpoll();
+				waitForShutdown();
+				terminate();
+				isTerminate() const { return _bTerminate; }
+				getBindAdapter(const string &sName);
+				addConnection(NetThread::Connection * cPtr, int fd, int iType);
+				close(unsigned int uid, int fd);
+				send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd);
+				getConnStatus(int lfd);
+				getListenSocketInfo();
+				getConnectionCount();
+				debug(const string &s);
+				info(const string &s);
+				error(const string &s);
+				getNetThreadNum() { return _netThreadNum; }
+				getNetThread() { return _netThreads; }
+				stopThread();
+				getLogicThreadNum();
+			protected:
+				BindAdapter;
+			public:
+				_pReportRspQueue;
+			private:
+				_netThreads;
+				_netThreadNum;
+				_bTerminate;
+				_handleStarted;
+				_pLocalLogger;
+				_handleGroups;
+		TC_EpollServerPtr;
+	#endif

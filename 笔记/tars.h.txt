@@ -1,0 +1,146 @@
+TarsInputStream/TarsOutputStream定义了从tars编码格式中读取/写入内容的类，主要是解析方面的工作
+BufferReader/BufferWriter封装了具体写入/读取的函数
+
+		TarsStructBase
+			protected:
+				TarsStructBase() {}
+				~TarsStructBase() {}
+		TarsProtoException : public std::runtime_error
+			TarsProtoException(const std::string& s) : std::runtime_error(s) {}
+		TarsEncodeException : public TarsProtoException
+			TarsEncodeException(const std::string& s) : TarsProtoException(s) {}
+		TarsDecodeException : public TarsProtoException
+			TarsDecodeException(const std::string& s) : TarsProtoException(s) {}
+		TarsDecodeMismatch : public TarsDecodeException
+			TarsDecodeMismatch(const std::string & s) : TarsDecodeException(s) {}
+		TarsDecodeRequireNotExist : public TarsDecodeException
+			TarsDecodeRequireNotExist(const std::string & s) : TarsDecodeException(s) {}
+		TarsDecodeInvalidValue : public TarsDecodeException
+			TarsDecodeInvalidValue(const std::string & s) : TarsDecodeException(s) {}
+		TarsNotEnoughBuff : public TarsProtoException
+			TarsNotEnoughBuff(const std::string & s) : TarsProtoException(s) {}
+		namespace
+			DataHead
+		BufferReader
+			public:
+				_buf;
+				_buf_len;
+				_cur;
+			public:
+				BufferReader() : _buf(NULL),_buf_len(0),_cur(0) {}
+				reset() { _cur = 0;}
+				readBuf(void * buf, size_t len)
+				peekBuf(void * buf, size_t len, size_t offset = 0)
+				readBuf(std::vector<Char, Alloc>& v, size_t len)
+				peekBuf(std::vector<Char, Alloc>& v, size_t len, size_t offset = 0)
+				skip(size_t len)
+				setBuffer(const char * buf, size_t len)
+				setBuffer(const std::vector<char,Alloc> &buf)
+				hasEnd()
+				tellp() const
+				base() const
+				size() const
+		MapBufferReader : public BufferReader
+			public:
+				MapBufferReader() : _buf_m(NULL),_buf_len_m(0),_cur_m(0) {}
+				reset() { _cur_m = 0; BufferReader::reset();}
+				cur()
+				left(){return _buf_len_m-_cur_m;}
+				mapBufferSkip(size_t len)
+				setMapBuffer(char * buf, size_t len)
+				setMapBuffer(std::vector<char,Alloc> &buf)
+			public:
+				_buf_m;
+				_buf_len_m;
+				_cur_m;
+		BufferWriter
+			public:
+				_buf;
+				_len;
+				_buf_len;
+				_reverse;
+			public:
+				BufferWriter(const BufferWriter & bw)
+				operator=(const BufferWriter& buf)
+				BufferWriter() : _buf(NULL) , _len(0) , _buf_len(0) , _reverse(true)
+				~BufferWriter()
+				reserve(size_t len)
+				reset() { _len = 0;}
+				writeBuf(const void * buf, size_t len)
+				getByteBuffer() const { return std::vector<char>(_buf, _buf + _len);}
+				getBuffer() const { return _buf;}
+				getLength() const { return _len;}
+				swap(std::vector<char>& v)
+				swap(BufferWriter& buf)
+		BufferWriterBuff
+			public:
+				_buf;
+				_len;
+				_buf_len;
+				_reverse;
+			private:
+				BufferWriterBuff(const BufferWriterBuff&);
+			public:
+				operator=(const BufferWriterBuff& buf)
+				BufferWriterBuff() : _buf(NULL) , _len(0) , _buf_len(0) , _reverse(false)
+				~BufferWriterBuff()
+				setBuffer(char * buffer, size_t size_buff)
+				reset() { _len = 0;}
+				writeBuf(const void * buf, size_t len)
+				getByteBuffer() const { return std::vector<char>(_buf, _buf + _len);}
+				getBuffer() const { return _buf;}
+				getLength() const { return _len;}
+				swap(std::vector<char>& v)
+				swap(BufferWriterBuff& buf)
+		TarsInputStream : public ReaderT
+			public:
+				skipToTag(uint8_t tag)
+				skipToStructEnd()
+				skipField()
+				skipField(uint8_t type)
+				readByType()
+				readUnknown(std::string & sUnkown, uint8_t tag)
+				XmlProxyCallback;
+				read(Bool& b, uint8_t tag, bool isRequire = true)
+				read(Char& c, uint8_t tag, bool isRequire = true)
+				read(UInt8& n, uint8_t tag, bool isRequire = true)
+				read(Short& n, uint8_t tag, bool isRequire = true)
+				read(UInt16& n, uint8_t tag, bool isRequire = true)
+				read(Int32& n, uint8_t tag, bool isRequire = true)
+				read(UInt32& n, uint8_t tag, bool isRequire = true)
+				read(Int64& n, uint8_t tag, bool isRequire = true)
+				read(Float& n, uint8_t tag, bool isRequire = true)
+				read(Double& n, uint8_t tag, bool isRequire = true)
+				read(std::string& s, uint8_t tag, bool isRequire = true)
+				read(char *buf, const UInt32 bufLen, UInt32 & readLen, uint8_t tag, bool isRequire = true)
+				read(std::map<K, V, Cmp, Alloc>& m, uint8_t tag, bool isRequire = true)
+				read(std::vector<Char, Alloc>& v, uint8_t tag, bool isRequire = true)
+				read(std::vector<T, Alloc>& v, uint8_t tag, bool isRequire = true)
+				read(T* v, const UInt32 len, UInt32 & readLen, uint8_t tag, bool isRequire = true)
+				read(T& v, uint8_t tag, bool isRequire = true, typename detail::disable_if<detail::is_convertible<T*, TarsStructBase*>, void ***>::type dummy = 0)
+				read(T& v, uint8_t tag, bool isRequire = true, typename detail::enable_if<detail::is_convertible<T*, TarsStructBase*>, void ***>::type dummy = 0)
+		TarsOutputStream : public WriterT
+			public:
+				writeUnknown(const std::string& s)
+				writeUnknownV2(const std::string& s)
+				write(Bool b, uint8_t tag)
+				write(Char n, uint8_t tag)
+				write(UInt8 n, uint8_t tag)
+				write(Short n, uint8_t tag)
+				write(UInt16 n, uint8_t tag)
+				write(Int32 n, uint8_t tag)
+				write(UInt32 n, uint8_t tag)
+				write(Int64 n, uint8_t tag)
+				write(Float n, uint8_t tag)
+				write(Double n, uint8_t tag)
+				write(const std::string& s, uint8_t tag)
+				write(const char *buf, const UInt32 len, uint8_t tag)
+				write(const std::map<K, V, Cmp, Alloc>& m, uint8_t tag)
+				write(const std::vector<T, Alloc>& v, uint8_t tag)
+				write(const T *v, const UInt32 len, uint8_t tag)
+				write(const std::vector<Char, Alloc>& v, uint8_t tag)
+				write(const T& v, uint8_t tag, typename detail::disable_if<detail::is_convertible<T*, TarsStructBase*>, void ***>::type dummy = 0)
+				write(const T& v, uint8_t tag, typename detail::enable_if<detail::is_convertible<T*, TarsStructBase*>, void ***>::type dummy = 0)
+	#ifdef __APPLE__
+	#else
+	#endif

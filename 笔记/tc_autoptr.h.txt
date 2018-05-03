@@ -1,0 +1,55 @@
+智能指针相关类，文件包含TC_HandleBaseT和TC_AutoPtr两个类模板。
+
+TC_HandleBaseT：实现线程安全的引用计数的类模板,任何需要支持智能指针管理的类都要继承它的一个实例，以获得计数支持
+                实例化了一个基于TC_Atomic的类，名字为TC_HandleBase，一般继承它
+TC_AutoPtr：智能指针管理类模板，内部使用被管理的对象的incRef和decRef来维护引用计数，如果被管理对象不支持这两个操作就会出错
+            所以才需要继承TC_HandleBase
+
+		TC_AutoPtrNull_Exception : public TC_Exception
+			TC_AutoPtrNull_Exception(const string &buffer) : TC_Exception(buffer){}
+			~TC_AutoPtrNull_Exception() throw(){}
+		TC_HandleBaseT
+			public:
+				atomic_type;
+				operator=(const TC_HandleBaseT&)
+				incRef() { _atomic.inc_fast(); }
+				decRef()
+				getRef() const { return _atomic.get(); }
+				setNoDelete(bool b) { _bNoDelete = b; }
+			protected:
+				TC_HandleBaseT() : _atomic(0), _bNoDelete(false)
+				TC_HandleBaseT(const TC_HandleBaseT&) : _atomic(0), _bNoDelete(false)
+				~TC_HandleBaseT()
+			protected:
+				_atomic;
+				_bNoDelete;
+		TC_HandleBaseT<int>::incRef()
+		TC_HandleBaseT<int>::decRef()
+		TC_HandleBaseT<int>::getRef() const
+		TC_HandleBase;
+		TC_AutoPtr
+			public:
+				element_type;
+				TC_AutoPtr(T* p = 0)
+				TC_AutoPtr(const TC_AutoPtr<Y>& r)
+				TC_AutoPtr(const TC_AutoPtr& r)
+				~TC_AutoPtr()
+				operator=(T* p)
+				operator=(const TC_AutoPtr<Y>& r)
+				operator=(const TC_AutoPtr& r)
+				dynamicCast(const TC_AutoPtr<Y>& r)
+				dynamicCast(Y* p)
+				get() const
+				operator->() const
+				operator*() const
+				operator bool() const
+				swap(TC_AutoPtr& other)
+			protected:
+				throwNullHandleException() const;
+			public:
+				_ptr;
+		TC_AutoPtr<T>::throwNullHandleException() const
+		operator==(const TC_AutoPtr<T>& lhs, const TC_AutoPtr<U>& rhs)
+		operator!=(const TC_AutoPtr<T>& lhs, const TC_AutoPtr<U>& rhs)
+		operator<(const TC_AutoPtr<T>& lhs, const TC_AutoPtr<U>& rhs)
+	#endif

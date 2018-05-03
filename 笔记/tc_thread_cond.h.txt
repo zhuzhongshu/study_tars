@@ -1,0 +1,22 @@
+线程条件变量类，对条件变量的使用做了一些基本的封装
+
+		TC_ThreadMutex;
+		TC_ThreadCond_Exception : public TC_Exception
+			TC_ThreadCond_Exception(const string &buffer) : TC_Exception(buffer){}
+			TC_ThreadCond_Exception(const string &buffer, int err) : TC_Exception(buffer, err){}
+			~TC_ThreadCond_Exception() throw() {}
+		TC_ThreadCond
+			public:
+				TC_ThreadCond();//条件变量初始化，不支持自定义属性
+				~TC_ThreadCond();
+				signal();
+				broadcast();
+				abstime(int millsecond) const;
+				wait(const Mutex& mutex) const
+				timedWait(const Mutex& mutex, int millsecond) const
+			protected:
+				TC_ThreadCond(const TC_ThreadCond&);
+				operator=(const TC_ThreadCond&);
+			private:
+				_cond;
+	#endif
